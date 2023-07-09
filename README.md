@@ -1,4 +1,4 @@
-# starting-page-infra
+# bookmarks-infra
 
 Ansible playbooks for provisioning my bookmarks web app.
 
