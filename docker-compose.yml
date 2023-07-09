@@ -1,0 +1,64 @@
+version: "3.3"
+
+services:
+    traefik:
+        image: "traefik:2.3"
+        container_name: "traefik"
+        command:
+            - "--providers.docker=true"
+            - "--providers.docker.exposedbydefault=false"
+            - "--entrypoints.web.address=:80"
+            - "--entrypoints.websecure.address=:443"
+            - "--log.level=DEBUG" # DEBUG, PANIC, FATAL, ERROR, WARN, INFO
+            - "--log.filePath=/logs/traefik.log"
+            - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+            - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+            # - "--certificatesresolvers.myresolver.acme.email=test@example.com"
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - "/var/run/docker.sock:/var/run/docker.sock:ro"
+            - "./logs/:/logs/"
+            - "./letsencrypt:/letsencrypt"
+        restart: always
+
+    frontend:
+        image: ghcr.io/christianwaldmann/bookmarks-frontend:latest
+        container_name: frontend
+        environment:
+            - BOOKMARKS_BACKEND_BASE_URL=${BOOKMARKS_BACKEND_BASE_URL}
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.frontend.rule=Host(`${BOOKMARKS_FRONTEND_DOMAIN}`)"
+            - "traefik.http.routers.frontend.entrypoints=websecure"
+            - "traefik.http.routers.frontend.tls.certresolver=myresolver"
+        restart: always
+
+    backend:
+        image: ghcr.io/christianwaldmann/bookmarks-backend:latest
+        container_name: backend
+        volumes:
+            - ./database:/database
+        environment:
+            - BOOKMARKS_SECRET_KEY=${BOOKMARKS_SECRET_KEY}
+            - BOOKMARKS_BACKEND_DOMAIN=${BOOKMARKS_BACKEND_DOMAIN}
+            - BOOKMARKS_FRONTEND_BASE_URL=${BOOKMARKS_FRONTEND_BASE_URL}
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.backend.rule=Host(`${BOOKMARKS_BACKEND_DOMAIN}`)"
+            - "traefik.http.routers.backend.entrypoints=websecure"
+            - "traefik.http.routers.backend.tls.certresolver=myresolver"
+        restart: always
+
+    uptime-kuma:
+        image: louislam/uptime-kuma:1
+        container_name: uptime_kuma
+        volumes:
+            - ./uptime-kuma-data:/app/data
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.uptime_kuma.rule=Host(`${BOOKMARKS_STATUS_DOMAIN}`)"
+            - "traefik.http.routers.uptime_kuma.entrypoints=websecure"
+            - "traefik.http.routers.uptime_kuma.tls.certresolver=myresolver"
+        restart: always

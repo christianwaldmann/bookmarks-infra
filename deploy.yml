@@ -1,0 +1,27 @@
+- name: Deploy application
+  hosts: server
+  connection: ssh
+  become: true
+  become_user: root
+  tasks:
+      - name: Create /App dir
+        ansible.builtin.file:
+            path: "/App"
+            state: directory
+            mode: "0777"
+
+      - name: Copy .env to server
+        ansible.builtin.copy:
+            src: ./.env
+            dest: "/App/.env"
+            mode: "0644"
+
+      - name: Copy docker-compose.yml to server
+        ansible.builtin.copy:
+            src: ./docker-compose.yml
+            dest: "/App/docker-compose.yml"
+            mode: "0644"
+
+      - name: Run docker-compose.yml
+        community.docker.docker_compose:
+            project_src: /App

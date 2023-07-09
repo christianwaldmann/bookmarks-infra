@@ -1,0 +1,11 @@
+- name: Download database
+  hosts: server
+  connection: ssh
+  become: true
+  become_user: root
+  tasks:
+      - name: Download backup db file to local machine
+        ansible.builtin.fetch:
+            src: "/App/database/db.sqlite3"
+            dest: ./backups/db-{{ ansible_date_time.epoch }}.sqlite3
+            flat: true

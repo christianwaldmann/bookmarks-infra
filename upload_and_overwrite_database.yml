@@ -1,0 +1,8 @@
+- name: Upload and overwrite database
+  hosts: server
+  tasks:
+      - name: Copy db file to server
+        ansible.builtin.copy:
+            src: ./db.sqlite3
+            dest: "/App/database"
+            mode: "0644"

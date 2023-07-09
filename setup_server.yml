@@ -1,0 +1,35 @@
+- name: Setup server
+  hosts: server
+  become: true
+  become_user: root
+  vars:
+      ansible_host_key_checking: false
+  tasks:
+      - name: Add Docker GPG apt Key
+        ansible.builtin.apt_key:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            state: present
+      - name: Add Docker Repository
+        ansible.builtin.apt_repository:
+            repo: deb https://download.docker.com/linux/ubuntu focal stable
+            state: present
+      - name: Apt update and upgrade
+        ansible.builtin.apt:
+            update_cache: true
+            upgrade: true
+      - name: Apt install packages
+        ansible.builtin.apt:
+            name:
+                [
+                    apt-transport-https,
+                    ca-certificates,
+                    curl,
+                    software-properties-common,
+                    python3-pip,
+                    virtualenv,
+                    python3-setuptools,
+                    docker,
+                    docker-ce,
+                    docker-compose,
+                ]
+            update_cache: true
