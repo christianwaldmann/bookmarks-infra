@@ -1,6 +1,11 @@
 # starting-page-infra
 
-Ansible playbooks for provisioning my [starting-page](https://github.com/christianwaldmann/starting-page) application.
+Ansible playbooks for provisioning my bookmarks web app.
+
+It consists of the following repos:
+- [bookmarks-frontend](https://github.com/christianwaldmann/bookmarks-frontend)
+- [bookmarks-backend](https://github.com/christianwaldmann/bookmarks-backend)
+- [bookmarks-infra](https://github.com/christianwaldmann/bookmarks-infra)
 
 ## Prerequisites
 
