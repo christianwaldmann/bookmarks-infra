@@ -1,9 +1,13 @@
 version: "3.3"
 
+volumes:
+    grafana_data: {}
+
 services:
     traefik:
         image: "traefik:2.3"
         container_name: "traefik"
+        restart: always
         command:
             - "--providers.docker=true"
             - "--providers.docker.exposedbydefault=false"
@@ -21,10 +25,9 @@ services:
             - "/var/run/docker.sock:/var/run/docker.sock:ro"
             - "./logs/:/logs/"
             - "./letsencrypt:/letsencrypt"
-        restart: always
 
     frontend:
-        image: ghcr.io/christianwaldmann/bookmarks-frontend:latest
+        image: ghcr.io/christianwaldmann/bookmarks-frontend:0.0.2
         container_name: frontend
         environment:
             - BOOKMARKS_BACKEND_BASE_URL=${BOOKMARKS_BACKEND_BASE_URL}
@@ -36,8 +39,9 @@ services:
         restart: always
 
     backend:
-        image: ghcr.io/christianwaldmann/bookmarks-backend:latest
+        image: ghcr.io/christianwaldmann/bookmarks-backend:0.0.5
         container_name: backend
+        restart: always
         volumes:
             - ./database:/database
         environment:
@@ -49,11 +53,11 @@ services:
             - "traefik.http.routers.backend.rule=Host(`${BOOKMARKS_BACKEND_DOMAIN}`)"
             - "traefik.http.routers.backend.entrypoints=websecure"
             - "traefik.http.routers.backend.tls.certresolver=myresolver"
-        restart: always
 
     uptime-kuma:
         image: louislam/uptime-kuma:1
         container_name: uptime_kuma
+        restart: always
         volumes:
             - ./uptime-kuma-data:/app/data
         labels:
@@ -61,4 +65,39 @@ services:
             - "traefik.http.routers.uptime_kuma.rule=Host(`${BOOKMARKS_STATUS_DOMAIN}`)"
             - "traefik.http.routers.uptime_kuma.entrypoints=websecure"
             - "traefik.http.routers.uptime_kuma.tls.certresolver=myresolver"
+
+    grafana:
+        image: grafana/grafana-oss:10.0.2
+        container_name: grafana
+        volumes:
+            - grafana_data:/var/lib/grafana
         restart: always
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.grafana.rule=Host(`${BOOKMARKS_GRAFANA_DOMAIN}`)"
+            - "traefik.http.routers.grafana.entrypoints=websecure"
+            - "traefik.http.routers.grafana.tls.certresolver=myresolver"
+            - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
+    prometheus:
+        image: prom/prometheus:v2.45.0
+        container_name: prometheus
+        restart: always
+        volumes:
+            - ./prometheus.yml:/etc/prometheus/prometheus.yml
+        command:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+
+    node-exporter:
+        image: prom/node-exporter:v1.6.0
+        container_name: node_exporter
+        restart: always
+        volumes:
+            - /proc:/host/proc:ro
+            - /sys:/host/sys:ro
+            - /:/rootfs:ro
+        command:
+            - "--path.procfs=/host/proc"
+            - "--path.rootfs=/rootfs"
+            - "--path.sysfs=/host/sys"
+            - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"

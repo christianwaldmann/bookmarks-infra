@@ -16,6 +16,12 @@
             dest: "/App/.env"
             mode: "0644"
 
+      - name: Copy prometheus.yml to server
+        ansible.builtin.copy:
+            src: ./prometheus.yml
+            dest: "/App/prometheus.yml"
+            mode: "0644"
+
       - name: Copy docker-compose.yml to server
         ansible.builtin.copy:
             src: ./docker-compose.yml
